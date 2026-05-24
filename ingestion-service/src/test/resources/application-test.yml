@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: ingestion-service-test
+
+ingestion:
+  jwt:
+    secret: test-secret-key-at-least-256-bits-long-for-hmac!!
+    issuer: drep-ingestion
+  default-rate-limit-rps: 100
+  tenant-rate-limits:
+    tenant-a: 10
+  api-keys:
+    tenant-a-key: tenant-a
+    admin-key: admin

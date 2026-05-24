@@ -1,0 +1,35 @@
+server:
+  port: 8098
+
+spring:
+  application:
+    name: ingestion-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+ingestion:
+  jwt:
+    secret: ${JWT_SECRET:change-me-in-production-use-at-least-256-bits-secret-key!!}
+    issuer: drep-ingestion
+  default-rate-limit-rps: 1000
+  tenant-rate-limits:
+    tenant-a: 500
+    tenant-b: 200
+  api-keys:
+    tenant-a-key: tenant-a
+    tenant-b-key: tenant-b
+    admin-key: admin
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} traceId=%X{traceId} tenantId=%X{tenantId} - %msg%n"
