@@ -1,0 +1,49 @@
+server:
+  port: 8099
+
+spring:
+  application:
+    name: stream-processor
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+    producer:
+      acks: all
+      retries: 3
+
+drep:
+  kafka:
+    topics:
+      raw: events.raw
+      processed: events.processed
+      dlq: events.dlq
+    raw-consumer:
+      group-id: stream-processor-group
+    processed-consumer:
+      group-id: processed-analytics-group
+    retry:
+      max-attempts: 3
+      initial-backoff-ms: 1000
+      backoff-multiplier: 2.0
+    lag-monitor:
+      alert-threshold: 10000
+      check-interval-ms: 30000
+    admin:
+      api-key: ${ADMIN_API_KEY:admin-key}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"

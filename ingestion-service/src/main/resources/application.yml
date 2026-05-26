@@ -7,6 +7,27 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    admin:
+      fail-fast: true
+
+drep:
+  kafka:
+    enabled: ${KAFKA_ENABLED:true}
+    topics:
+      raw: events.raw
+      processed: events.processed
+      dlq: events.dlq
+      partitions: 12
+      retention-ms: 604800000
+      replication-factor: ${KAFKA_REPLICATION_FACTOR:1}
+    producer:
+      acks: all
+      retries: 3
 
 ingestion:
   jwt:

@@ -6,7 +6,7 @@ import com.drep.ingestion.dto.EventRequest;
 import com.drep.ingestion.dto.IngestionResponse;
 import com.drep.ingestion.exception.UnauthorizedException;
 import com.drep.ingestion.filter.TraceIdFilter;
-import com.drep.ingestion.model.Event;
+import com.drep.common.model.Event;
 import com.drep.ingestion.service.EventIngestionService;
 import com.drep.ingestion.service.TenantRateLimitService;
 import com.fasterxml.jackson.core.JsonProcessingException;

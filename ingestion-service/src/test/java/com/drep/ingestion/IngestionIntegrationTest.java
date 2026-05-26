@@ -1,7 +1,7 @@
 package com.drep.ingestion;
 
 import com.drep.ingestion.auth.JwtService;
-import com.drep.ingestion.service.EventIngestionService;
+import com.drep.ingestion.kafka.InMemoryEventPublisher;
 import com.drep.ingestion.service.TenantRateLimitService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +34,7 @@ class IngestionIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private EventIngestionService ingestionService;
+    private InMemoryEventPublisher inMemoryEventPublisher;
 
     @Autowired
     private JwtService jwtService;
@@ -44,7 +44,7 @@ class IngestionIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        ingestionService.clearProcessedEvents();
+        inMemoryEventPublisher.clear();
         rateLimitService.reset();
     }
 

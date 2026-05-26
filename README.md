@@ -1,13 +1,16 @@
 # Distributed Real-Time Event Processing Platform
 
-Java / Spring Boot monorepo implementing **EPIC 1 — Event Ingestion Layer**.
+Java / Spring Boot monorepo implementing **EPIC 1 — Event Ingestion Layer** and **EPIC 2 — Message Broker & Queue Layer**.
 
 ### Project Structure
 
 ```
 pom.xml                  # Maven parent (aggregator)
-ingestion-service/       # Spring Boot REST API + API gateway
+common-events/           # Shared Event + DlqEvent models
+ingestion-service/       # Spring Boot REST API + API gateway + Kafka producer
+stream-processor/        # Kafka consumer, DLQ, admin API
 producer-sdk/            # Java client SDK for event producers
+docker-compose.yml       # Local Kafka + Kafka UI
 ```
 
 ---
@@ -20,6 +23,16 @@ producer-sdk/            # Java client SDK for event producers
 mvn clean install
 ```
 
+### Run Kafka (required for EPIC 2)
+
+```bash
+docker compose up -d
+```
+
+Kafka: `localhost:9092` · Kafka UI: `http://localhost:8085`
+
+Topics created automatically: `events.raw`, `events.processed`, `events.dlq` (7-day retention, partitioned by `tenantId:eventType`).
+
 ### Run the ingestion service
 
 ```bash
@@ -27,7 +40,31 @@ cd ingestion-service
 mvn spring-boot:run
 ```
 
-The service starts on `http://localhost:8098`.
+The service starts on `http://localhost:8098` and publishes accepted events to `events.raw`.
+
+### Run the stream processor
+
+```bash
+cd stream-processor
+mvn spring-boot:run
+```
+
+Consumes `events.raw`, publishes to `events.processed`, routes failures to `events.dlq`. Runs on `http://localhost:8099`.
+
+### DLQ admin API
+
+```bash
+# List DLQ events
+curl -H "X-API-Key: admin-key" http://localhost:8099/admin/dlq
+
+# Replay all (up to 100)
+curl -X POST -H "X-API-Key: admin-key" http://localhost:8099/admin/dlq/replay
+
+# Replay one event
+curl -X POST -H "X-API-Key: admin-key" http://localhost:8099/admin/dlq/{dlqId}/replay
+```
+
+See `docs/kafka-consumer-groups.md` for consumer group and rebalancing details.
 
 ### Health check
 

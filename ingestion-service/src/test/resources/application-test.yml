@@ -1,6 +1,12 @@
 spring:
   application:
     name: ingestion-service-test
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:9092}
+
+drep:
+  kafka:
+    enabled: false
 
 ingestion:
   jwt:

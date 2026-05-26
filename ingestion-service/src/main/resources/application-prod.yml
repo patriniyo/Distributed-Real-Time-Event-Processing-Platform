@@ -1,0 +1,9 @@
+drep:
+  kafka:
+    topics:
+      replication-factor: 3
+
+spring:
+  kafka:
+    producer:
+      acks: all

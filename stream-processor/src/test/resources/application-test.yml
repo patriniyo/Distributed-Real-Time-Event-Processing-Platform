@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: stream-processor-test
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+drep:
+  processor:
+    fail-event-types:
+      - fail.process
+  kafka:
+    retry:
+      max-attempts: 3
+      initial-backoff-ms: 100
+      backoff-multiplier: 1.0
+    lag-monitor:
+      check-interval-ms: 3600000

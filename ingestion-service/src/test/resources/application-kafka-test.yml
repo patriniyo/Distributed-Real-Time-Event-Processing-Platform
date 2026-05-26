@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: ingestion-service-kafka-test
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+drep:
+  kafka:
+    enabled: true
+    topics:
+      partitions: 1
+      replication-factor: 1
+
+ingestion:
+  jwt:
+    secret: test-secret-key-at-least-256-bits-long-for-hmac!!
+    issuer: drep-ingestion
+  default-rate-limit-rps: 1000
+  api-keys:
+    tenant-a-key: tenant-a
