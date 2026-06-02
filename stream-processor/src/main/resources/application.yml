@@ -1,5 +1,6 @@
 server:
   port: 8099
+  shutdown: graceful
 
 spring:
   application:
@@ -18,6 +19,8 @@ spring:
     producer:
       acks: all
       retries: 3
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 drep:
   processor:
@@ -49,6 +52,11 @@ drep:
       check-interval-ms: 30000
     admin:
       api-key: ${ADMIN_API_KEY:admin-key}
+  auth:
+    enabled: ${DREP_AUTH_ENABLED:true}
+    analytics-url: ${ANALYTICS_SERVICE_URL:http://localhost:8100}
+    internal-token: ${DREP_INTERNAL_TOKEN:internal-token}
+    legacy-admin-api-key: ${ADMIN_API_KEY:admin-key}
 
 management:
   endpoints:
@@ -57,12 +65,31 @@ management:
         include: health,info,metrics,prometheus
   endpoint:
     health:
+      probes:
+        enabled: true
       show-details: when_authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
   metrics:
     distribution:
       percentiles-histogram:
         drep.processing.latency: true
+    tags:
+      service: ${spring.application.name}
 
-logging:
-  pattern:
-    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+resilience4j:
+  circuitbreaker:
+    instances:
+      kafka:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
