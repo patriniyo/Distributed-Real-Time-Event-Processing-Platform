@@ -2,7 +2,7 @@ package com.drep.ingestion.filter;
 
 import com.drep.ingestion.auth.JwtService;
 import com.drep.ingestion.config.IngestionProperties;
-import com.drep.ingestion.dto.ErrorResponse;
+import com.drep.common.dto.ApiErrorResponse;
 import com.drep.ingestion.exception.UnauthorizedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
@@ -39,7 +39,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return "/health".equals(path) || path.startsWith("/actuator/health");
+        return "/health".equals(path) || path.startsWith("/actuator/health") || path.startsWith("/admin/");
     }
 
     @Override
@@ -62,7 +62,7 @@ public class AuthFilter extends OncePerRequestFilter {
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setHeader(TraceIdFilter.TRACE_ID_HEADER, traceId);
             objectMapper.writeValue(response.getOutputStream(),
-                    ErrorResponse.of("UNAUTHORIZED", ex.getMessage(), traceId));
+                    ApiErrorResponse.of("UNAUTHORIZED", ex.getMessage(), traceId));
         } finally {
             SecurityContextHolder.clearContext();
         }

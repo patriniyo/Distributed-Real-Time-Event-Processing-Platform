@@ -3,8 +3,7 @@ package com.drep.processor.consumer;
 import com.drep.common.model.Event;
 import com.drep.processor.config.KafkaProperties;
 import com.drep.processor.service.DlqPublisher;
-import com.drep.processor.service.EventTransformationService;
-import com.drep.processor.service.ProcessedEventPublisher;
+import com.drep.processor.service.EventProcessingService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,17 +16,14 @@ public class RawEventConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(RawEventConsumer.class);
 
-    private final EventTransformationService transformationService;
-    private final ProcessedEventPublisher processedEventPublisher;
+    private final EventProcessingService eventProcessingService;
     private final DlqPublisher dlqPublisher;
     private final KafkaProperties kafkaProperties;
 
-    public RawEventConsumer(EventTransformationService transformationService,
-                            ProcessedEventPublisher processedEventPublisher,
+    public RawEventConsumer(EventProcessingService eventProcessingService,
                             DlqPublisher dlqPublisher,
                             KafkaProperties kafkaProperties) {
-        this.transformationService = transformationService;
-        this.processedEventPublisher = processedEventPublisher;
+        this.eventProcessingService = eventProcessingService;
         this.dlqPublisher = dlqPublisher;
         this.kafkaProperties = kafkaProperties;
     }
@@ -45,11 +41,10 @@ public class RawEventConsumer {
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                Event transformed = transformationService.transform(event);
-                processedEventPublisher.publish(transformed);
+                EventProcessingService.Result result = eventProcessingService.process(event);
                 acknowledgment.acknowledge();
-                log.info("Processed event eventId={} partition={} offset={} attempt={}",
-                        event.eventId(), record.partition(), record.offset(), attempt);
+                log.info("Handled event eventId={} outcome={} partition={} offset={} attempt={}",
+                        event.eventId(), result.outcome(), record.partition(), record.offset(), attempt);
                 return;
             } catch (Exception ex) {
                 lastError = ex;

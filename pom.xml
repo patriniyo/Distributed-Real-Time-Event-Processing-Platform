@@ -16,6 +16,8 @@
         <module>producer-sdk</module>
         <module>ingestion-service</module>
         <module>stream-processor</module>
+        <module>analytics-service</module>
+        <module>dashboard-service</module>
     </modules>
 
     <properties>

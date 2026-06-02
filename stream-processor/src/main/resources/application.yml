@@ -7,6 +7,10 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
@@ -16,6 +20,17 @@ spring:
       retries: 3
 
 drep:
+  processor:
+    schema-version: 1
+    tenant-tiers:
+      tenant-a: premium
+      tenant-b: standard
+    idempotency:
+      enabled: ${REDIS_ENABLED:true}
+      ttl-hours: 24
+    replay:
+      group-id-prefix: replay
+      max-records: 10000
   kafka:
     topics:
       raw: events.raw
@@ -39,10 +54,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when_authorized
+  metrics:
+    distribution:
+      percentiles-histogram:
+        drep.processing.latency: true
 
 logging:
   pattern:

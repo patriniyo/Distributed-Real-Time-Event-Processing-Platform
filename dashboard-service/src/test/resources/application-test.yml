@@ -1,0 +1,4 @@
+drep:
+  dashboard:
+    kafka:
+      enabled: false

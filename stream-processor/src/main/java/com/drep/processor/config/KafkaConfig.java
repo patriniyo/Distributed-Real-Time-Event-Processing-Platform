@@ -2,6 +2,7 @@ package com.drep.processor.config;
 
 import com.drep.common.model.DlqEvent;
 import com.drep.common.model.Event;
+import com.drep.common.model.ProcessedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -51,6 +52,23 @@ public class KafkaConfig {
         factory.setConsumerFactory(rawEventConsumerFactory);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
         return factory;
+    }
+
+    @Bean
+    public ProducerFactory<String, ProcessedEvent> processedEventProducerFactory(
+            org.springframework.boot.autoconfigure.kafka.KafkaProperties springKafkaProperties) {
+        Map<String, Object> config = new HashMap<>(springKafkaProperties.buildProducerProperties(null));
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        config.put(ProducerConfig.ACKS_CONFIG, "all");
+        config.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        return new DefaultKafkaProducerFactory<>(config);
+    }
+
+    @Bean
+    public KafkaTemplate<String, ProcessedEvent> processedEventKafkaTemplate(
+            ProducerFactory<String, ProcessedEvent> processedEventProducerFactory) {
+        return new KafkaTemplate<>(processedEventProducerFactory);
     }
 
     @Bean

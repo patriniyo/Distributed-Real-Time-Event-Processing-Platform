@@ -1,0 +1,43 @@
+server:
+  port: 8101
+
+spring:
+  application:
+    name: dashboard-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: latest
+
+drep:
+  dashboard:
+    api-key: ${ADMIN_API_KEY:admin-key}
+    kafka:
+      enabled: ${KAFKA_ENABLED:true}
+      processed-topic: events.processed
+      consumer-group: dashboard-live-feed-group
+    services:
+      ingestion: ${INGESTION_SERVICE_URL:http://localhost:8098}
+      stream-processor: ${STREAM_PROCESSOR_URL:http://localhost:8099}
+      analytics: ${ANALYTICS_SERVICE_URL:http://localhost:8100}
+    web-socket:
+      max-connections: 1000
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"

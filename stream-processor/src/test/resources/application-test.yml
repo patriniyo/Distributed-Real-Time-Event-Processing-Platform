@@ -1,6 +1,8 @@
 spring:
   application:
     name: stream-processor-test
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
 
@@ -8,6 +10,10 @@ drep:
   processor:
     fail-event-types:
       - fail.process
+    idempotency:
+      enabled: false
+    tenant-tiers:
+      tenant-a: premium
   kafka:
     retry:
       max-attempts: 3

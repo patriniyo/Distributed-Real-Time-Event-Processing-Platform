@@ -17,4 +17,5 @@ ingestion:
     tenant-a: 10
   api-keys:
     tenant-a-key: tenant-a
-    admin-key: admin
+  admin:
+    api-key: admin-key

@@ -5,6 +5,7 @@ import com.drep.ingestion.dto.BatchEventRequest;
 import com.drep.ingestion.dto.EventRequest;
 import com.drep.ingestion.dto.IngestionResponse;
 import com.drep.ingestion.exception.UnauthorizedException;
+import com.drep.common.dto.ApiErrorResponse;
 import com.drep.ingestion.filter.TraceIdFilter;
 import com.drep.common.model.Event;
 import com.drep.ingestion.service.EventIngestionService;
@@ -94,12 +95,12 @@ public class EventController {
     }
 
     private void validate(List<EventRequest> events) {
-        List<com.drep.ingestion.dto.ErrorResponse.FieldError> errors = new ArrayList<>();
+        List<ApiErrorResponse.FieldError> errors = new ArrayList<>();
         for (int i = 0; i < events.size(); i++) {
             Set<ConstraintViolation<EventRequest>> violations = validator.validate(events.get(i));
             int index = i;
             violations.forEach(v -> errors.add(
-                    new com.drep.ingestion.dto.ErrorResponse.FieldError(
+                    new ApiErrorResponse.FieldError(
                             events.size() == 1 ? v.getPropertyPath().toString()
                                     : "events[" + index + "]." + v.getPropertyPath(),
                             v.getMessage())));
@@ -111,7 +112,7 @@ public class EventController {
 
     private void validateTenantAccess(List<EventRequest> events, String authenticatedTenant) {
         for (EventRequest event : events) {
-            if (!authenticatedTenant.equals(event.tenantId()) && !"admin".equals(authenticatedTenant)) {
+            if (!authenticatedTenant.equals(event.tenantId())) {
                 throw new UnauthorizedException(
                         "Tenant mismatch: authenticated as '" + authenticatedTenant
                                 + "' but event has tenantId '" + event.tenantId() + "'");

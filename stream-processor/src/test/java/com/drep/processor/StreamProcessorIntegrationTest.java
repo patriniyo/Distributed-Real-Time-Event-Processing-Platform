@@ -2,6 +2,8 @@ package com.drep.processor;
 
 import com.drep.common.model.DlqEvent;
 import com.drep.common.model.Event;
+import com.drep.common.model.ProcessedEvent;
+import com.drep.processor.idempotency.InMemoryIdempotencyService;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -9,7 +11,9 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -36,14 +40,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DirtiesContext
 class StreamProcessorIntegrationTest {
 
+    @Autowired
+    private InMemoryIdempotencyService inMemoryIdempotencyService;
+
+    @BeforeEach
+    void setUp() {
+        inMemoryIdempotencyService.clear();
+    }
+
     @Test
-    void successfulEventIsPublishedToProcessedTopic() throws Exception {
-        Event event = sampleEvent("page.view");
+    void successfulEventIsPublishedToProcessedTopicWithEnrichment() throws Exception {
+        Event event = sampleEvent("Page.View");
         publishRaw(event);
 
-        Event processed = pollProcessed(event.eventId());
+        ProcessedEvent processed = pollProcessed(event.eventId());
         assertThat(processed).isNotNull();
         assertThat(processed.eventType()).isEqualTo("page.view");
+        assertThat(processed.schemaVersion()).isEqualTo(1);
+        assertThat(processed.processedAt()).isNotNull();
+        assertThat(processed.enrichment()).isNotNull();
+        assertThat(processed.enrichment().get("tenantTier").asText()).isEqualTo("premium");
+    }
+
+    @Test
+    void duplicateEventIsProcessedExactlyOnce() throws Exception {
+        Event event = sampleEvent("page.view");
+        publishRaw(event);
+        publishRaw(event);
+
+        int count = countProcessed(event.eventId());
+        assertThat(count).isEqualTo(1);
     }
 
     @Test
@@ -85,12 +111,12 @@ class StreamProcessorIntegrationTest {
         template.destroy();
     }
 
-    private Event pollProcessed(UUID eventId) throws Exception {
+    private ProcessedEvent pollProcessed(UUID eventId) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
         while (System.nanoTime() < deadline) {
-            try (KafkaConsumer<String, Event> consumer = eventConsumer("processed-test")) {
+            try (KafkaConsumer<String, ProcessedEvent> consumer = processedConsumer("processed-test")) {
                 consumer.subscribe(Collections.singletonList("events.processed"));
-                ConsumerRecords<String, Event> records = consumer.poll(Duration.ofMillis(500));
+                ConsumerRecords<String, ProcessedEvent> records = consumer.poll(Duration.ofMillis(500));
                 for (var record : records) {
                     if (record.value().eventId().equals(eventId)) {
                         return record.value();
@@ -100,6 +126,28 @@ class StreamProcessorIntegrationTest {
             Thread.sleep(300);
         }
         return null;
+    }
+
+    private int countProcessed(UUID eventId) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+        int count = 0;
+        while (System.nanoTime() < deadline) {
+            try (KafkaConsumer<String, ProcessedEvent> consumer = processedConsumer("processed-count-test")) {
+                consumer.subscribe(Collections.singletonList("events.processed"));
+                ConsumerRecords<String, ProcessedEvent> records = consumer.poll(Duration.ofMillis(500));
+                for (var record : records) {
+                    if (record.value().eventId().equals(eventId)) {
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                Thread.sleep(1000);
+                return count;
+            }
+            Thread.sleep(300);
+        }
+        return count;
     }
 
     private DlqEvent pollDlq(UUID eventId) throws Exception {
@@ -119,8 +167,8 @@ class StreamProcessorIntegrationTest {
         return null;
     }
 
-    private KafkaConsumer<String, Event> eventConsumer(String groupId) {
-        return new KafkaConsumer<>(consumerProps(groupId, Event.class));
+    private KafkaConsumer<String, ProcessedEvent> processedConsumer(String groupId) {
+        return new KafkaConsumer<>(consumerProps(groupId, ProcessedEvent.class));
     }
 
     private KafkaConsumer<String, DlqEvent> dlqConsumer() {

@@ -1,0 +1,62 @@
+server:
+  port: 8100
+
+spring:
+  application:
+    name: analytics-service
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:drep}
+    username: ${POSTGRES_USER:drep}
+    password: ${POSTGRES_PASSWORD:drep}
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+
+drep:
+  analytics:
+    kafka:
+      processed-topic: events.processed
+      consumer-group: analytics-service-group
+    cache:
+      ttl-seconds: 30
+    aggregation:
+      flush-interval-ms: 5000
+    retention:
+      default-days: 90
+      cleanup-interval-ms: 86400000
+    tenant-retention-days:
+      tenant-a: 90
+      tenant-b: 90
+    admin:
+      api-key: ${ADMIN_API_KEY:admin-key}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
