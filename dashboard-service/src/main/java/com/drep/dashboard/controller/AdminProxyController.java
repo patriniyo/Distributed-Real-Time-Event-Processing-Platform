@@ -1,5 +1,6 @@
 package com.drep.dashboard.controller;
 
+import com.drep.common.security.Permission;
 import com.drep.dashboard.client.ServiceClientFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +33,7 @@ public class AdminProxyController {
     @GetMapping("/dlq")
     @Operation(summary = "List DLQ events")
     public List<?> listDlq(@RequestParam(defaultValue = "100") int limit, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.ADMIN_DLQ);
         return clientFactory.streamProcessorClient().get()
                 .uri("/admin/dlq?limit={limit}", limit)
                 .retrieve()
@@ -42,7 +43,7 @@ public class AdminProxyController {
     @PostMapping("/dlq/replay")
     @Operation(summary = "Replay all DLQ events")
     public Map<?, ?> replayAll(@RequestParam(defaultValue = "100") int limit, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.ADMIN_REPLAY);
         return clientFactory.streamProcessorClient().post()
                 .uri("/admin/dlq/replay?limit={limit}", limit)
                 .retrieve()
@@ -52,7 +53,7 @@ public class AdminProxyController {
     @PostMapping("/dlq/{dlqId}/replay")
     @Operation(summary = "Replay a single DLQ event")
     public Map<?, ?> replayOne(@PathVariable UUID dlqId, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.ADMIN_REPLAY);
         return clientFactory.streamProcessorClient().post()
                 .uri("/admin/dlq/{dlqId}/replay", dlqId)
                 .retrieve()
@@ -62,7 +63,7 @@ public class AdminProxyController {
     @PostMapping("/replay")
     @Operation(summary = "Replay events from Kafka by time range")
     public Map<?, ?> replay(@RequestBody Map<String, Object> body, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.ADMIN_REPLAY);
         return clientFactory.streamProcessorClient().post()
                 .uri("/admin/replay")
                 .body(body)
@@ -73,7 +74,7 @@ public class AdminProxyController {
     @GetMapping("/replay/{jobId}")
     @Operation(summary = "Get replay job status")
     public Map<?, ?> replayStatus(@PathVariable UUID jobId, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.ADMIN_REPLAY);
         return clientFactory.streamProcessorClient().get()
                 .uri("/admin/replay/{jobId}", jobId)
                 .retrieve()

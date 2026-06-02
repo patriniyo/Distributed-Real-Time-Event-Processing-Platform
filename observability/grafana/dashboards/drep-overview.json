@@ -1,0 +1,28 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Ingestion rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [{ "expr": "rate(drep_ingestion_events_total[1m])", "legendFormat": "events/s" }]
+    },
+    {
+      "title": "Processing latency p95",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [{ "expr": "histogram_quantile(0.95, rate(drep_processing_latency_seconds_bucket[5m]))", "legendFormat": "p95" }]
+    },
+    {
+      "title": "Analytics cache hit ratio",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [{ "expr": "rate(drep_analytics_cache_hits_total[5m]) / (rate(drep_analytics_cache_hits_total[5m]) + rate(drep_analytics_cache_misses_total[5m]))", "legendFormat": "hit ratio" }]
+    }
+  ],
+  "schemaVersion": 39,
+  "title": "DREP Overview",
+  "uid": "drep-overview",
+  "version": 1
+}

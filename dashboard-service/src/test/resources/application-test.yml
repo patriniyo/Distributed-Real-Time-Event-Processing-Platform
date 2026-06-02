@@ -1,4 +1,6 @@
 drep:
+  auth:
+    enabled: false
   dashboard:
     kafka:
       enabled: false

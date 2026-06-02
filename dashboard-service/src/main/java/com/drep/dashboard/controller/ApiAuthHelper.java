@@ -1,25 +1,63 @@
 package com.drep.dashboard.controller;
 
-import com.drep.dashboard.config.DashboardProperties;
+import com.drep.common.security.AccessDeniedException;
+import com.drep.common.security.AuthenticatedPrincipal;
+import com.drep.common.security.Permission;
+import com.drep.dashboard.auth.RemoteAuthClient;
+import com.drep.dashboard.auth.UnauthorizedAuthException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 @Component
 public class ApiAuthHelper {
 
-    private final DashboardProperties properties;
+    public static final String PRINCIPAL_ATTR = "drep.authenticatedPrincipal";
 
-    public ApiAuthHelper(DashboardProperties properties) {
-        this.properties = properties;
+    private final RemoteAuthClient remoteAuthClient;
+
+    public ApiAuthHelper(RemoteAuthClient remoteAuthClient) {
+        this.remoteAuthClient = remoteAuthClient;
     }
 
-    public void requireAuth(HttpServletRequest request) {
-        String apiKey = request.getHeader("X-API-Key");
-        if (apiKey == null || !apiKey.equals(properties.getApiKey())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key required");
+    public AuthenticatedPrincipal requireAuth(HttpServletRequest request) {
+        return authenticate(request);
+    }
+
+    public AuthenticatedPrincipal requirePermission(HttpServletRequest request, Permission permission) {
+        AuthenticatedPrincipal principal = authenticate(request);
+        try {
+            principal.requirePermission(permission);
+        } catch (AccessDeniedException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage());
+        }
+        return principal;
+    }
+
+    public AuthenticatedPrincipal requireTenantAccess(HttpServletRequest request,
+                                                      Permission permission,
+                                                      String tenantId) {
+        AuthenticatedPrincipal principal = requirePermission(request, permission);
+        try {
+            principal.requireTenantAccess(tenantId);
+        } catch (AccessDeniedException ex) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage());
+        }
+        return principal;
+    }
+
+    private AuthenticatedPrincipal authenticate(HttpServletRequest request) {
+        Object cached = request.getAttribute(PRINCIPAL_ATTR);
+        if (cached instanceof AuthenticatedPrincipal principal) {
+            return principal;
+        }
+        try {
+            AuthenticatedPrincipal principal = remoteAuthClient.validate(request.getHeader("X-API-Key"));
+            request.setAttribute(PRINCIPAL_ATTR, principal);
+            return principal;
+        } catch (UnauthorizedAuthException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, ex.getMessage());
         }
     }
 }

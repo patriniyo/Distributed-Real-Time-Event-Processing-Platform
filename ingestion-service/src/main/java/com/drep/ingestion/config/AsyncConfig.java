@@ -9,7 +9,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 
 @Configuration
-@EnableConfigurationProperties(IngestionProperties.class)
+@EnableConfigurationProperties({IngestionProperties.class, com.drep.ingestion.auth.AuthClientProperties.class})
 @EnableAsync
 public class AsyncConfig {
 

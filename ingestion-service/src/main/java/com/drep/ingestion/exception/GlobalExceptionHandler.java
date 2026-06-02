@@ -1,5 +1,6 @@
 package com.drep.ingestion.exception;
 
+import com.drep.common.security.AccessDeniedException;
 import com.drep.common.dto.ApiErrorResponse;
 import com.drep.ingestion.controller.ValidationFailedException;
 import com.drep.ingestion.filter.TraceIdFilter;
@@ -67,6 +68,14 @@ public class GlobalExceptionHandler {
         String traceId = TraceIdFilter.getTraceId(request);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiErrorResponse.of("UNAUTHORIZED", ex.getMessage(), traceId));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(
+            AccessDeniedException ex, HttpServletRequest request) {
+        String traceId = TraceIdFilter.getTraceId(request);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of("FORBIDDEN", ex.getMessage(), traceId));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

@@ -1,5 +1,6 @@
 package com.drep.dashboard.controller;
 
+import com.drep.common.security.Permission;
 import com.drep.dashboard.client.ProxyUriBuilder;
 import com.drep.dashboard.client.ServiceClientFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +38,7 @@ public class AnalyticsProxyController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
             HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requireTenantAccess(request, Permission.READ_ANALYTICS, tenant);
 
         String uri = ProxyUriBuilder.build("/api/v1/analytics", ProxyUriBuilder.params(
                 "tenant", tenant,

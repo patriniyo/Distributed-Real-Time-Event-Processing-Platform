@@ -1,5 +1,6 @@
 package com.drep.dashboard.controller;
 
+import com.drep.common.security.Permission;
 import com.drep.dashboard.client.ProxyUriBuilder;
 import com.drep.dashboard.client.ServiceClientFactory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,7 @@ public class EventsProxyController {
     @PostMapping
     @Operation(summary = "Ingest a single event")
     public Map<?, ?> ingest(@RequestBody Map<String, Object> event, HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requirePermission(request, Permission.INGEST_EVENTS);
         return clientFactory.ingestionClient().post()
                 .uri("/api/v1/events")
                 .body(event)
@@ -48,7 +49,7 @@ public class EventsProxyController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             HttpServletRequest request) {
-        authHelper.requireAuth(request);
+        authHelper.requireTenantAccess(request, Permission.READ_EVENTS, tenant);
 
         String uri = ProxyUriBuilder.build("/api/v1/events", ProxyUriBuilder.params(
                 "tenant", tenant,

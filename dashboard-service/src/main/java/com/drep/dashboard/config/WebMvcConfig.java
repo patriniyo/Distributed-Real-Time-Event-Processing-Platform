@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-@EnableConfigurationProperties(DashboardProperties.class)
+@EnableConfigurationProperties({DashboardProperties.class, com.drep.dashboard.auth.AuthClientProperties.class})
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override

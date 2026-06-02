@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: ingestion-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:8098']
+
+  - job_name: stream-processor
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:8099']
+
+  - job_name: analytics-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:8100']
+
+  - job_name: dashboard-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:8101']

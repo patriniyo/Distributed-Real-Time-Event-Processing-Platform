@@ -1,6 +1,7 @@
 package com.drep.processor.controller;
 
-import com.drep.processor.config.KafkaProperties;
+import com.drep.common.security.Permission;
+import com.drep.processor.auth.ProcessorSecuritySupport;
 import com.drep.processor.dto.ReplayJobResponse;
 import com.drep.processor.dto.ReplayRequest;
 import com.drep.processor.service.EventReplayService;
@@ -23,34 +24,28 @@ import java.util.UUID;
 public class ReplayAdminController {
 
     private final EventReplayService eventReplayService;
-    private final KafkaProperties kafkaProperties;
+    private final ProcessorSecuritySupport securitySupport;
 
-    public ReplayAdminController(EventReplayService eventReplayService, KafkaProperties kafkaProperties) {
+    public ReplayAdminController(EventReplayService eventReplayService,
+                                 ProcessorSecuritySupport securitySupport) {
         this.eventReplayService = eventReplayService;
-        this.kafkaProperties = kafkaProperties;
+        this.securitySupport = securitySupport;
     }
 
     @PostMapping
     public ResponseEntity<ReplayJobResponse> startReplay(@Valid @RequestBody ReplayRequest request,
                                                          HttpServletRequest httpRequest) {
-        requireAdmin(httpRequest);
+        securitySupport.requirePermission(httpRequest, Permission.ADMIN_REPLAY);
         return ResponseEntity.accepted().body(eventReplayService.startReplay(request));
     }
 
     @GetMapping("/{jobId}")
     public ReplayJobResponse getReplayJob(@PathVariable UUID jobId, HttpServletRequest httpRequest) {
-        requireAdmin(httpRequest);
+        securitySupport.requirePermission(httpRequest, Permission.ADMIN_REPLAY);
         ReplayJobResponse job = eventReplayService.getJob(jobId);
         if (job == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Replay job not found");
         }
         return job;
-    }
-
-    private void requireAdmin(HttpServletRequest request) {
-        String apiKey = request.getHeader("X-API-Key");
-        if (apiKey == null || !apiKey.equals(kafkaProperties.getAdmin().getApiKey())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin API key required");
-        }
     }
 }

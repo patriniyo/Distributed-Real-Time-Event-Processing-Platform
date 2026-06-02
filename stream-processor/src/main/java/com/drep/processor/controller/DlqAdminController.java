@@ -1,7 +1,8 @@
 package com.drep.processor.controller;
 
 import com.drep.common.model.DlqEvent;
-import com.drep.processor.config.KafkaProperties;
+import com.drep.common.security.Permission;
+import com.drep.processor.auth.ProcessorSecuritySupport;
 import com.drep.processor.service.DlqInspectionService;
 import com.drep.processor.service.DlqReplayService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,26 +26,26 @@ public class DlqAdminController {
 
     private final DlqInspectionService dlqInspectionService;
     private final DlqReplayService dlqReplayService;
-    private final KafkaProperties kafkaProperties;
+    private final ProcessorSecuritySupport securitySupport;
 
     public DlqAdminController(DlqInspectionService dlqInspectionService,
                               DlqReplayService dlqReplayService,
-                              KafkaProperties kafkaProperties) {
+                              ProcessorSecuritySupport securitySupport) {
         this.dlqInspectionService = dlqInspectionService;
         this.dlqReplayService = dlqReplayService;
-        this.kafkaProperties = kafkaProperties;
+        this.securitySupport = securitySupport;
     }
 
     @GetMapping
     public List<DlqEvent> list(@RequestParam(defaultValue = "100") int limit,
                                HttpServletRequest request) {
-        requireAdmin(request);
+        securitySupport.requirePermission(request, Permission.ADMIN_DLQ);
         return dlqInspectionService.inspect(limit);
     }
 
     @GetMapping("/{dlqId}")
     public DlqEvent getById(@PathVariable UUID dlqId, HttpServletRequest request) {
-        requireAdmin(request);
+        securitySupport.requirePermission(request, Permission.ADMIN_DLQ);
         return dlqInspectionService.inspectByDlqId(dlqId).stream()
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "DLQ event not found"));
@@ -53,25 +54,18 @@ public class DlqAdminController {
     @PostMapping("/replay")
     public Map<String, Object> replayAll(@RequestParam(defaultValue = "100") int limit,
                                          HttpServletRequest request) {
-        requireAdmin(request);
+        securitySupport.requirePermission(request, Permission.ADMIN_REPLAY);
         int replayed = dlqReplayService.replayAll(limit);
         return Map.of("replayed", replayed);
     }
 
     @PostMapping("/{dlqId}/replay")
     public Map<String, Object> replayOne(@PathVariable UUID dlqId, HttpServletRequest request) {
-        requireAdmin(request);
+        securitySupport.requirePermission(request, Permission.ADMIN_REPLAY);
         boolean replayed = dlqReplayService.replayByDlqId(dlqId);
         if (!replayed) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "DLQ event not found");
         }
         return Map.of("replayed", true, "dlqId", dlqId);
-    }
-
-    private void requireAdmin(HttpServletRequest request) {
-        String apiKey = request.getHeader("X-API-Key");
-        if (apiKey == null || !apiKey.equals(kafkaProperties.getAdmin().getApiKey())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin API key required");
-        }
     }
 }

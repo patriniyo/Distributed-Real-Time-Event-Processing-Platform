@@ -1,30 +1,30 @@
 package com.drep.analytics.controller;
 
-import com.drep.analytics.config.AnalyticsProperties;
+import com.drep.analytics.auth.AuditService;
+import com.drep.analytics.auth.SecuritySupport;
 import com.drep.analytics.dto.EventQueryResponse;
 import com.drep.analytics.service.EventQueryService;
+import com.drep.common.security.AuthenticatedPrincipal;
+import com.drep.common.security.Permission;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 @RestController
 @RequestMapping("/api/v1/events")
 public class EventQueryController {
 
     private final EventQueryService eventQueryService;
-    private final AnalyticsProperties properties;
+    private final SecuritySupport securitySupport;
 
-    public EventQueryController(EventQueryService eventQueryService, AnalyticsProperties properties) {
+    public EventQueryController(EventQueryService eventQueryService, SecuritySupport securitySupport) {
         this.eventQueryService = eventQueryService;
-        this.properties = properties;
+        this.securitySupport = securitySupport;
     }
 
     @GetMapping
@@ -36,14 +36,7 @@ public class EventQueryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             HttpServletRequest request) {
-        requireAuth(request);
+        securitySupport.requireTenantAccess(request, Permission.READ_EVENTS, tenant);
         return eventQueryService.query(tenant, eventType, from, to, page, size);
-    }
-
-    private void requireAuth(HttpServletRequest request) {
-        String apiKey = request.getHeader("X-API-Key");
-        if (apiKey == null || !apiKey.equals(properties.getAdmin().getApiKey())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "API key required");
-        }
     }
 }

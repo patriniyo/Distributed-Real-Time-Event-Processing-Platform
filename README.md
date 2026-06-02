@@ -166,6 +166,37 @@ cd dashboard && npm run dev
 
 Vite dev server proxies API/WebSocket calls to `http://localhost:8101`.
 
+### EPIC 7 — Multi-Tenancy & RBAC
+
+Tenant provisioning, scoped API keys, and audit logs are stored in analytics-service (PostgreSQL):
+
+```bash
+# Provision tenant
+curl -X POST -H "X-API-Key: admin-key" http://localhost:8100/admin/tenants/provision/tenant-d
+
+# Generate scoped API key (INGEST / READ / ADMIN scopes)
+curl -X POST -H "X-API-Key: admin-key" -H "Content-Type: application/json" \
+  http://localhost:8100/admin/tenants/tenant-a/api-keys \
+  -d '{"scope":"READ","role":"ANALYST"}'
+
+# Audit log
+curl -H "X-API-Key: admin-key" http://localhost:8100/admin/audit-logs
+```
+
+Roles: `Admin`, `Engineer`, `Analyst`, `ReadOnly`. Tenant-scoped keys cannot query another tenant's data (403). Bootstrap keys: `tenant-a-key`, `tenant-b-key`, `admin-key`.
+
+### EPIC 8 — Observability
+
+With `docker compose up -d`:
+
+| Service | URL |
+|---------|-----|
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 (admin/admin) |
+| Jaeger | http://localhost:16686 |
+
+All services expose `/actuator/prometheus`, `/health/live`, `/health/ready`, JSON structured logs, OpenTelemetry traces (OTLP → Jaeger), and Resilience4j circuit breakers.
+
 ### Health check
 
 ```bash

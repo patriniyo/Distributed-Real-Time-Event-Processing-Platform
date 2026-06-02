@@ -23,11 +23,14 @@ public class AnalyticsQueryService {
 
     private final AggregationMetricRepository repository;
     private final AnalyticsCacheService cacheService;
+    private final com.drep.analytics.observability.AnalyticsMetrics analyticsMetrics;
 
     public AnalyticsQueryService(AggregationMetricRepository repository,
-                                 AnalyticsCacheService cacheService) {
+                                 AnalyticsCacheService cacheService,
+                                 com.drep.analytics.observability.AnalyticsMetrics analyticsMetrics) {
         this.repository = repository;
         this.cacheService = cacheService;
+        this.analyticsMetrics = analyticsMetrics;
     }
 
     @Transactional(readOnly = true)
@@ -38,13 +41,22 @@ public class AnalyticsQueryService {
         String cacheKey = tenantId + "|" + eventType + "|" + windowSize.code() + "|"
                 + from + "|" + to + "|" + groupBy + "|" + page + "|" + size;
 
-        return cacheService.getCachedQuery(cacheKey).orElseGet(() -> {
+        var cached = cacheService.getCachedQuery(cacheKey);
+        if (cached.isPresent()) {
+            analyticsMetrics.recordCacheHit();
+            return cached.get();
+        }
+        analyticsMetrics.recordCacheMiss();
+        io.micrometer.core.instrument.Timer.Sample sample = analyticsMetrics.startDbQuery();
+        try {
             AnalyticsQueryResponse response = groupBy != null && groupBy.equalsIgnoreCase("eventType")
                     ? queryGroupedByEventType(tenantId, windowSize.code(), from, to)
                     : queryFlat(tenantId, eventType, windowSize.code(), from, to, page, size);
             cacheService.cacheQuery(cacheKey, response);
             return response;
-        });
+        } finally {
+            analyticsMetrics.recordDbQuery(sample);
+        }
     }
 
     private AnalyticsQueryResponse queryFlat(String tenantId, String eventType, String windowSize,

@@ -1,5 +1,7 @@
 package com.drep.analytics.exception;
 
+import com.drep.analytics.auth.ForbiddenAuthException;
+import com.drep.analytics.auth.UnauthorizedAuthException;
 import com.drep.common.dto.ApiErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,27 @@ import java.util.UUID;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(UnauthorizedAuthException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnauthorized(UnauthorizedAuthException ex) {
+        String traceId = UUID.randomUUID().toString();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiErrorResponse.of("UNAUTHORIZED", ex.getMessage(), traceId));
+    }
+
+    @ExceptionHandler(ForbiddenAuthException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenAuthException ex) {
+        String traceId = UUID.randomUUID().toString();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of("FORBIDDEN", ex.getMessage(), traceId));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(IllegalArgumentException ex) {
+        String traceId = UUID.randomUUID().toString();
+        return ResponseEntity.badRequest()
+                .body(ApiErrorResponse.of("BAD_REQUEST", ex.getMessage(), traceId));
+    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiErrorResponse> handleStatus(ResponseStatusException ex) {

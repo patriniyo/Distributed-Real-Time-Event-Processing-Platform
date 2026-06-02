@@ -1,5 +1,6 @@
 server:
   port: 8101
+  shutdown: graceful
 
 spring:
   application:
@@ -11,6 +12,8 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       auto-offset-reset: latest
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 drep:
   dashboard:
@@ -25,6 +28,11 @@ drep:
       analytics: ${ANALYTICS_SERVICE_URL:http://localhost:8100}
     web-socket:
       max-connections: 1000
+  auth:
+    enabled: ${DREP_AUTH_ENABLED:true}
+    analytics-url: ${ANALYTICS_SERVICE_URL:http://localhost:8100}
+    internal-token: ${DREP_INTERNAL_TOKEN:internal-token}
+    legacy-admin-api-key: ${ADMIN_API_KEY:admin-key}
 
 springdoc:
   api-docs:
@@ -36,8 +44,30 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    tags:
+      service: ${spring.application.name}
 
-logging:
-  pattern:
-    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+resilience4j:
+  circuitbreaker:
+    instances:
+      upstream:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
